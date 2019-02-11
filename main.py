@@ -40,8 +40,8 @@ import conv_net
 from conv_net import ConvNet
 
 
-root_path = '/home/sharan/Astar_test'
-#root_path = '/home/sharan/Astar-Recaptured-images'
+#root_path = '/home/sharan/Astar_test'
+root_path = '/home/sharan/Astar-Recaptured-images'
 #root_path = '/home/sharan/Test_Data_Orig_Recap'
 #root_path = 'C:/Users/sharan/Dataset'
 
