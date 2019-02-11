@@ -40,6 +40,14 @@ import conv_net
 from conv_net import ConvNet
 
 
+import pycuda.driver as cuda
+cuda.init()
+
+cuda0 = torch.device('cuda:0')
+cuda1 = torch.device('cuda:1')
+cuda2 = torch.device('cuda:2')
+cuda3 = torch.device('cuda:3')
+
 #root_path = '/home/sharan/Astar_test'
 #root_path = '/home/sharan/Astar-Recaptured-images'
 root_path = '/home/sharan/Test_Data_Orig_Recap'
@@ -136,7 +144,7 @@ for i in range(0, len(input_tensor_training)):
 #print('The number of training blocks are', len(input_tensor_training))
 #print('The number of labels are ', len(block_labels_tensor_train_encode))
 
-input_tensor_stack_training_1 = torch.stack(input_tensor_training)
+input_tensor_stack_training_1 = torch.stack(input_tensor_training).cuda()
 
 
 print('Array:', type(input_tensor_stack_training))

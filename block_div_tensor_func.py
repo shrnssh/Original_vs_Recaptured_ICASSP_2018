@@ -33,6 +33,13 @@ import copy
 
 from splitall import splitall
 
+import pycuda.driver as cuda
+cuda.init()
+
+cuda0 = torch.device('cuda:0')
+cuda1 = torch.device('cuda:1')
+cuda2 = torch.device('cuda:2')
+cuda3 = torch.device('cuda:3')
 
 
 def block_div_tensor(listOfFiles, input_tensor, block_labels, action, lof_size, labels=[], valid_label=[]):
@@ -170,7 +177,7 @@ def block_div_tensor(listOfFiles, input_tensor, block_labels, action, lof_size, 
             #the pre-processed blocks of each image, and converts them to a tensor of size 16x64x64
         
             #creating one block
-            input_tensor.append(torch.tensor([op_1, op_2, op_3, op_4, op_5, op_6, op_7, op_8, op_9, op_10, op_11, op_12, op_13, op_14, op_15, op_16]))
+            input_tensor.append(torch.tensor([op_1, op_2, op_3, op_4, op_5, op_6, op_7, op_8, op_9, op_10, op_11, op_12, op_13, op_14, op_15, op_16]).cuda())
             #print(len(input_tensor))
             block_labels.append(labels[i])
             #print(block_labels)
