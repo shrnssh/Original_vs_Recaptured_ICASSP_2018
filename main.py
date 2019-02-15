@@ -19,6 +19,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import DataLoader
 from torch.optim import lr_scheduler
 import torch.utils.data as data_utils
+from torch.autograd import Variable
 
 
 from multiprocessing import Process, freeze_support
@@ -50,7 +51,10 @@ cuda3 = torch.device('cuda:3')
 
 #root_path = '/home/sharan/Astar_test'
 #root_path = '/home/sharan/Astar-Recaptured-images'
-root_path = '/home/sharan/Test_Data_Orig_Recap'
+#root_path = '/home/sharan/Test_Data_Orig_Recap'
+
+root_path = '/home/sharan/Farid_Dataset'
+
 #root_path = 'C:/Users/sharan/Dataset'
 
 
@@ -126,104 +130,20 @@ block_labels_training = []
 
 print('The number of training images are: ', len(training_files))
 
-block_div_tensor(training_files, input_tensor_training, block_labels_training, 'train', len(training_files), labels)
-print('Blocks for training have been created')
-
-labels[:] = []
-
-block_labels_tensor_train_encode = Label_Encode(block_labels_training)
+num_images = 650
 
 
+quot = int(len(training_files)/num_images)
+print('quot:', quot)
 
-input_tensor_stack_training = torch.zeros(len(input_tensor_training), 16, 64, 64)
-
-for i in range(0, len(input_tensor_training)):
-    input_tensor_stack_training[i, :, :, :] = input_tensor_training[i]
-
-
-#print('The number of training blocks are', len(input_tensor_training))
-#print('The number of labels are ', len(block_labels_tensor_train_encode))
-
-input_tensor_stack_training_1 = torch.stack(input_tensor_training).cuda()
-
-
-print('Array:', type(input_tensor_stack_training))
-print('Stack:', type(input_tensor_stack_training_1))
-
-
-train = data_utils.TensorDataset(input_tensor_stack_training, block_labels_tensor_train_encode)
-train_loader = data_utils.DataLoader(train, batch_size=64, shuffle=False, drop_last=True)
-
-#*****************************************************************
-
-##For validation data
-
-valid_labels = []
-
-input_tensor_valid_list = []
-block_labels_tensor_valid_encoded_list = []
-
-print('Validation blocks are being created ')
-
-for i in range(0, len(valid_files)):
-    test_valid = []
-    input_tensor_valid = []
-    block_labels_valid = []
-    ##print(valid_files[i])
-    test_valid.append(valid_files[i])
-    
-    #print(test_valid)
-    block_div_tensor(test_valid, input_tensor_valid, block_labels_valid, 'valid', len(test_valid), valid_label=valid_labels)
-    #print(valid_labels)
-    input_tensor_valid_list.append(input_tensor_valid)
-
-    block_labels_tensor_valid_encode = Label_Encode_Valid(block_labels_valid) 
-    block_labels_tensor_valid_encoded_list.append(block_labels_tensor_valid_encode)
-
-
-##print(valid_labels)
-##print(block_labels_tensor_valid_encoded_list)
-
-#print(type(input_tensor_valid[0]))
-
-input_tensor_stack_valid = []
-
-for j in range(0, len(input_tensor_valid_list)):
-    input_tensor_stack_valid.append(torch.stack(input_tensor_valid_list[j]))
-
-
-print(len(input_tensor_stack_valid))
-
-
-loop_size = 0
-
-#print('Len of input_valid_tensor:', len(input_tensor_stack_valid))
-#print('Len of block_labels_tensor_valid_encoded_list:', len(block_labels_tensor_valid_encoded_list))
-#print('Len of valid_labels:', len(valid_labels))
-
-
-if(len(input_tensor_stack_valid) == len(block_labels_tensor_valid_encoded_list)):
-    if(len(input_tensor_stack_valid) == len(valid_labels)):
-        loop_size = len(input_tensor_stack_valid)
-        #print('All good')
-    else:
-        print('Size_match_error')
-else:
-    print('Size_match_error')
-
-
-#*****************************************************************
-
-
-#Neural Net framework
+#Neural Network declarations
 
 num_epochs = 2
 num_classes = 2
 batch_size = 64                      #TO BE CHANGED
 learning_rate = 0.001
 
-#Network_implementation
-
+    #Neural Net framework
 
 model = ConvNet()
 
@@ -233,14 +153,98 @@ scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min', factor 
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-#print(device)
+
+
+for j in range(0, quot):
+    input_tensor_training = []
+    block_labels_training = []
+    print('This is the ', j+1 ,' set of , ', num_images)
+    if(j>0):
+        model = ConvNet()
+        model.cuda(cuda0)
+        optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+        checkpoint = torch.load('/home/sharan/model.pth')
+        model.load_state_dict(checkpoint['model_state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+        loss = checkpoint['loss']
+
+    training_files_temp = training_files[ j*num_images : (j+1)*num_images ]
+    block_div_tensor(training_files_temp, input_tensor_training, block_labels_training, 'train', len(training_files_temp), labels)
+    print('Blocks for training have been created')
+
+    #labels[:] = []
+    block_labels_tensor_train_encode = Label_Encode(block_labels_training)
+    #input_tensor_stack_training = torch.zeros(len(input_tensor_training), 16, 64, 64)
+
+    #for i in range(0, len(input_tensor_training)):
+        #input_tensor_stack_training[i, :, :, :] = input_tensor_training[i]
+
+    input_tensor_stack_training = torch.stack(input_tensor_training).cuda(cuda2)
+
+    train = data_utils.TensorDataset(input_tensor_stack_training, block_labels_tensor_train_encode)
+    train_loader = data_utils.DataLoader(train, batch_size=batch_size, shuffle=True, drop_last=True)
+
+    #**********************************************************************#
+
+    #Training
+
+    for epoch in range(0, 2):
+        running_loss = 0.0
+        for i, data in enumerate(train_loader, 0):
+            inputs, labels = data
+            inputs = inputs.to(device, dtype=torch.float32)
+            labels = labels.to(device)
+            model.cuda(cuda0)
+
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            #print(running_loss)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+            if i%500 == 499:
+                print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 2000))
+                running_loss = 0.0
+            #print(running_loss)
+        scheduler.step(running_loss)
+
+    torch.save({
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': loss,
+            }, '/home/sharan/model.pth')
+
+    del train_loader, train, input_tensor_stack_training
+    torch.cuda.empty_cache()
 
 
 
-#**********************************************************************#
 
-#Training
+model = ConvNet()
+model.cuda(cuda0)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+checkpoint = torch.load('/home/sharan/model.pth')
+model.load_state_dict(checkpoint['model_state_dict'])
+optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+loss = checkpoint['loss']
 
+input_tensor_training = []
+block_labels_training = []
+
+training_files_temp = training_files[quot*num_images : len(training_files)]
+block_div_tensor(training_files_temp, input_tensor_training, block_labels_training, 'train', len(training_files_temp), labels)
+print('Blocks for training have been created')
+
+
+
+block_labels_tensor_train_encode = Label_Encode(block_labels_training)
+input_tensor_stack_training = torch.stack(input_tensor_training).cuda(cuda2)
+
+
+train = data_utils.TensorDataset(input_tensor_stack_training, block_labels_tensor_train_encode)
+train_loader = data_utils.DataLoader(train, batch_size=batch_size, shuffle=True, drop_last=True)
 for epoch in range(0, 2):
     running_loss = 0.0
     for i, data in enumerate(train_loader, 0):
@@ -248,20 +252,31 @@ for epoch in range(0, 2):
         inputs = inputs.to(device, dtype=torch.float32)
         labels = labels.to(device)
         model.to(device)
-
         optimizer.zero_grad()
         outputs = model(inputs)
         loss = criterion(outputs, labels)
         #print(running_loss)
         loss.backward()
         optimizer.step()
-
         running_loss += loss.item()
-        if i%100 == 99:
+        if i%500 == 499:
             print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 2000))
             running_loss = 0.0
-        #print(running_loss)
+            #print(running_loss)
     scheduler.step(running_loss)
+
+'''
+torch.save({
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': loss,
+            }, '/home/sharan/model.pth')
+
+'''
+
+del train_loader, train, input_tensor_stack_training
+torch.cuda.empty_cache()
+
 
 print('Finished Training')
 
@@ -269,32 +284,175 @@ print('Finished Training')
 #*********************************************************************#
 
 
-#Validation
-
-
-##TEST FOR CHECKING IF INPUT TENSOR AND LABELS ARE OF SAME SIZE
-
-##for i in range(0, len(input_tensor_stack_valid)):
-    #print(type(input_tensor_stack_valid[i]), 'and length ', input_tensor_stack_valid[i].size())
-    #print(type(block_labels_tensor_valid_encoded_list[i]), 'and length ', block_labels_tensor_valid_encoded_list[i].size())
-    #for each in input_tensor_stack_valid[i]:
-        #print(each.size())
-
-    #valid = data_utils.TensorDataset(input_tensor_stack_valid[i], block_labels_tensor_valid_encoded_list[i])
-    #print(i)
-
-## 0 -Original
-## 1 -Recaptured
 
 
 
-#print('The set of validation labels are: ')
-#print(block_labels_tensor_valid_encoded_list)
 
+
+#*****************************************************************
+
+##For validation data
+
+
+
+print('Validation blocks are being created ')
+
+
+print('The number of validation images are: ', len(valid_files))
+
+num_images = 250
+
+
+quot = int(len(valid_files)/num_images)
+print('quot:', quot)
+
+
+print('Validation blocks are being created ')
 
 
 
 prediction_label = []
+valid_labels = []
+
+for j in range(0, quot):
+    print('This is the ', j+1 ,' set of ', num_images)
+
+    input_tensor_valid_list = []
+    block_labels_tensor_valid_encoded_list = []
+
+    valid_files_temp = valid_files[ j*num_images : (j+1)*num_images ]
+    for i in range(0, len(valid_files_temp)):
+        print(i)
+        test_valid = []
+        input_tensor_valid = []
+        block_labels_valid = []
+        ##print(valid_files[i])
+        test_valid.append(valid_files[i])
+    
+        #print(test_valid)
+        block_div_tensor(test_valid, input_tensor_valid, block_labels_valid, 'valid', len(test_valid), valid_label=valid_labels)
+        #print(valid_labels)
+        input_tensor_valid_list.append(input_tensor_valid)
+
+        block_labels_tensor_valid_encode = Label_Encode_Valid(block_labels_valid) 
+        block_labels_tensor_valid_encoded_list.append(block_labels_tensor_valid_encode)
+
+        ##print(valid_labels)
+        ##print(block_labels_tensor_valid_encoded_list)
+
+        #print(type(input_tensor_valid[0]))
+
+    print('Creating input tensor stack')      
+
+    input_tensor_stack_valid = []
+    for k in range(0, len(input_tensor_valid_list)):
+        input_tensor_stack_valid.append(torch.stack(input_tensor_valid_list[k]).cuda(cuda2))
+
+    #print(len(input_tensor_stack_valid))
+
+    loop_size = 0
+    print('Len of input_valid_tensor:', len(input_tensor_stack_valid))
+    print('Len of block_labels_tensor_valid_encoded_list:', len(block_labels_tensor_valid_encoded_list))
+    #print('Len of valid_labels:', len(valid_labels))
+
+    if(len(input_tensor_stack_valid) == len(block_labels_tensor_valid_encoded_list)):
+        #if(len(input_tensor_stack_valid) == len(valid_labels)):
+        loop_size = len(input_tensor_stack_valid)
+        print('All good')
+        #else:
+        #print('Size_match_error')
+    else:
+        print('Size_match_error')
+    
+
+    for i in range(0, loop_size):
+        valid = data_utils.TensorDataset(input_tensor_stack_valid[i], block_labels_tensor_valid_encoded_list[i])
+        valid_loader = data_utils.DataLoader(valid, batch_size=1, shuffle=False, drop_last=False)
+        #j=0
+        #print(len(valid))
+        orig_count = 0
+        recap_count = 0
+        for data in valid_loader:
+            valid_inputs, labels_valid = data
+            valid_inputs = valid_inputs.to(device, dtype=torch.float32)
+            labels_valid = labels_valid.to(device)
+            #print('Label: ', labels_valid)
+            model.to(device)
+            outputs = model(valid_inputs)
+            #print(outputs)
+            _, predicted = torch.max(outputs.data, 1)
+            #print('Predicted value: ', predicted)
+            #print(' ')
+            if(predicted == 0):
+                orig_count += 1
+            elif(predicted == 1):
+                recap_count += 1
+        if(orig_count > recap_count):
+            prediction_label.append('original')
+        elif(recap_count > orig_count):
+            prediction_label.append('recaptured')
+        else:
+            prediction_label.append('No prediction')
+
+    del valid_loader, valid, input_tensor_stack_valid
+    torch.cuda.empty_cache()
+    
+    #print('Original prediction count: ', orig_count, 'and recaptured prediction count: ', recap_count )
+
+print('The last set of indices')
+
+
+print('Length of prediction label here is:', len(prediction_label))
+
+valid_files_temp = valid_files[quot*num_images : len(valid_files)]
+
+print('The len of remaining indices of valid_files_temp: ', len(valid_files_temp))
+
+
+
+input_tensor_valid_list = []
+block_labels_tensor_valid_encoded_list = []
+
+
+for i in range(0, len(valid_files_temp)):
+    print(i)
+    test_valid = []
+    input_tensor_valid = []
+    block_labels_valid = []
+    ##print(valid_files[i])
+    test_valid.append(valid_files_temp[i])
+    #print(test_valid)
+    block_div_tensor(test_valid, input_tensor_valid, block_labels_valid, 'valid', len(test_valid), valid_label=valid_labels)
+    #print(valid_labels)
+    input_tensor_valid_list.append(input_tensor_valid)
+
+    block_labels_tensor_valid_encode = Label_Encode_Valid(block_labels_valid) 
+    block_labels_tensor_valid_encoded_list.append(block_labels_tensor_valid_encode)
+
+    ##print(valid_labels)
+    ##print(block_labels_tensor_valid_encoded_list)
+    #print(type(input_tensor_valid[0]))
+
+print('Creating the tensor stack')
+
+input_tensor_stack_valid = []
+for j in range(0, len(input_tensor_valid_list)):
+    input_tensor_stack_valid.append(torch.stack(input_tensor_valid_list[j]).cuda(cuda2))
+    #print(len(input_tensor_stack_valid))
+    loop_size = 0
+    #print('Len of input_valid_tensor:', len(input_tensor_stack_valid))
+    #print('Len of block_labels_tensor_valid_encoded_list:', len(block_labels_tensor_valid_encoded_list))
+    #print('Len of valid_labels:', len(valid_labels))
+if(len(input_tensor_stack_valid) == len(block_labels_tensor_valid_encoded_list)):
+    #if(len(input_tensor_stack_valid) == len(valid_labels)):
+    loop_size = len(input_tensor_stack_valid)
+    print('All good')
+    #else:
+        #print('Size_match_error')
+else:
+    print('Size_match_error')
+
+print('Length of prediction label here just before the last set of indices:', len(prediction_label))
 
 for i in range(0, loop_size):
     valid = data_utils.TensorDataset(input_tensor_stack_valid[i], block_labels_tensor_valid_encoded_list[i])
@@ -324,9 +482,12 @@ for i in range(0, loop_size):
         prediction_label.append('recaptured')
     else:
         prediction_label.append('No prediction')
-    
-    #print('Original prediction count: ', orig_count, 'and recaptured prediction count: ', recap_count )
 
+
+
+
+print('The number of predictions are :', len(prediction_label))
+print('The number of output labels are: ', len(valid_labels))
 
 accuracy = 0
 for i in range(0, len(prediction_label)):
