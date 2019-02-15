@@ -311,7 +311,7 @@ print('Validation blocks are being created ')
 
 
 
-valid_threshold = 0.55
+valid_threshold = 0.60
 
 
 prediction_label = []
