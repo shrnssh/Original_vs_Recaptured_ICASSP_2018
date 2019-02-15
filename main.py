@@ -311,6 +311,9 @@ print('Validation blocks are being created ')
 
 
 
+valid_threshold = 0.55
+
+
 prediction_label = []
 valid_labels = []
 
@@ -387,9 +390,9 @@ for j in range(0, quot):
                 orig_count += 1
             elif(predicted == 1):
                 recap_count += 1
-        if(orig_count > recap_count):
+        if(orig_count >= valid_threshold*(orig_count + recap_count)):
             prediction_label.append('original')
-        elif(recap_count > orig_count):
+        elif(recap_count >=valid_threshold*(orig_count + recap_count)):
             prediction_label.append('recaptured')
         else:
             prediction_label.append('No prediction')
@@ -476,9 +479,9 @@ for i in range(0, loop_size):
             orig_count += 1
         elif(predicted == 1):
             recap_count += 1
-    if(orig_count > recap_count):
+    if(orig_count > valid_threshold*(orig_count + recap_count)):
         prediction_label.append('original')
-    elif(recap_count > orig_count):
+    elif(recap_count > valid_threshold*(orig_count + recap_count)):
         prediction_label.append('recaptured')
     else:
         prediction_label.append('No prediction')
