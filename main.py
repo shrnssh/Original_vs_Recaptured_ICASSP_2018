@@ -49,13 +49,19 @@ cuda1 = torch.device('cuda:1')
 cuda2 = torch.device('cuda:2')
 cuda3 = torch.device('cuda:3')
 
+#root_path = 'C:/Users/sharan/Dataset'
 #root_path = '/home/sharan/Astar_test'
 #root_path = '/home/sharan/Astar-Recaptured-images'
 #root_path = '/home/sharan/Test_Data_Orig_Recap'
 
 root_path = '/home/sharan/Farid_Dataset'
 
-#root_path = 'C:/Users/sharan/Dataset'
+#root_path = '/home/sharan/Farid_Data_Display'
+
+#root_path = '/home/sharan/ROSE_Data_LCD'
+
+
+torch.cuda.empty_cache()
 
 
 listOfFiles = []
@@ -130,7 +136,7 @@ block_labels_training = []
 
 print('The number of training images are: ', len(training_files))
 
-num_images = 650
+num_images = 150
 
 
 quot = int(len(training_files)/num_images)
@@ -163,7 +169,7 @@ for j in range(0, quot):
         model = ConvNet()
         model.cuda(cuda0)
         optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-        checkpoint = torch.load('/home/sharan/model.pth')
+        checkpoint = torch.load('/home/sharan/model_1.pth')
         model.load_state_dict(checkpoint['model_state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         loss = checkpoint['loss']
@@ -179,7 +185,7 @@ for j in range(0, quot):
     #for i in range(0, len(input_tensor_training)):
         #input_tensor_stack_training[i, :, :, :] = input_tensor_training[i]
 
-    input_tensor_stack_training = torch.stack(input_tensor_training).cuda(cuda2)
+    input_tensor_stack_training = torch.stack(input_tensor_training).cuda(cuda0)	#cuda2
 
     train = data_utils.TensorDataset(input_tensor_stack_training, block_labels_tensor_train_encode)
     train_loader = data_utils.DataLoader(train, batch_size=batch_size, shuffle=True, drop_last=True)
@@ -204,7 +210,7 @@ for j in range(0, quot):
             optimizer.step()
 
             running_loss += loss.item()
-            if i%500 == 499:
+            if i%50 == 49:
                 print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 2000))
                 running_loss = 0.0
             #print(running_loss)
@@ -214,7 +220,7 @@ for j in range(0, quot):
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': loss,
-            }, '/home/sharan/model.pth')
+            }, '/home/sharan/model_1.pth')
 
     del train_loader, train, input_tensor_stack_training
     torch.cuda.empty_cache()
@@ -225,7 +231,7 @@ for j in range(0, quot):
 model = ConvNet()
 model.cuda(cuda0)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-checkpoint = torch.load('/home/sharan/model.pth')
+checkpoint = torch.load('/home/sharan/model_1.pth')
 model.load_state_dict(checkpoint['model_state_dict'])
 optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
 loss = checkpoint['loss']
@@ -240,7 +246,7 @@ print('Blocks for training have been created')
 
 
 block_labels_tensor_train_encode = Label_Encode(block_labels_training)
-input_tensor_stack_training = torch.stack(input_tensor_training).cuda(cuda2)
+input_tensor_stack_training = torch.stack(input_tensor_training).cuda(cuda0) #cuda2
 
 
 train = data_utils.TensorDataset(input_tensor_stack_training, block_labels_tensor_train_encode)
@@ -259,7 +265,7 @@ for epoch in range(0, 2):
         loss.backward()
         optimizer.step()
         running_loss += loss.item()
-        if i%500 == 499:
+        if i%50 == 49:
             print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, running_loss / 2000))
             running_loss = 0.0
             #print(running_loss)
@@ -270,7 +276,7 @@ torch.save({
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': loss,
-            }, '/home/sharan/model.pth')
+            }, '/home/sharan/model_1.pth')
 
 '''
 
@@ -300,7 +306,7 @@ print('Validation blocks are being created ')
 
 print('The number of validation images are: ', len(valid_files))
 
-num_images = 250
+num_images = 50
 
 
 quot = int(len(valid_files)/num_images)
@@ -311,7 +317,7 @@ print('Validation blocks are being created ')
 
 
 
-valid_threshold = 0.60
+valid_threshold = 0.6
 
 
 prediction_label = []
@@ -349,7 +355,7 @@ for j in range(0, quot):
 
     input_tensor_stack_valid = []
     for k in range(0, len(input_tensor_valid_list)):
-        input_tensor_stack_valid.append(torch.stack(input_tensor_valid_list[k]).cuda(cuda2))
+        input_tensor_stack_valid.append(torch.stack(input_tensor_valid_list[k]).cuda(cuda0)) #cuda2
 
     #print(len(input_tensor_stack_valid))
 
@@ -440,7 +446,7 @@ print('Creating the tensor stack')
 
 input_tensor_stack_valid = []
 for j in range(0, len(input_tensor_valid_list)):
-    input_tensor_stack_valid.append(torch.stack(input_tensor_valid_list[j]).cuda(cuda2))
+    input_tensor_stack_valid.append(torch.stack(input_tensor_valid_list[j]).cuda(cuda0)) #cuda3
     #print(len(input_tensor_stack_valid))
     loop_size = 0
     #print('Len of input_valid_tensor:', len(input_tensor_stack_valid))

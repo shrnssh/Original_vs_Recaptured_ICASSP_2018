@@ -135,6 +135,7 @@ def block_div_tensor(listOfFiles, input_tensor, block_labels, action, lof_size, 
             test = input_blocks[j]
             #Inverse log of base 10
             
+
             op_1 = cv2.GaussianBlur(test, (3, 3), 3.16)
             op_2 = cv2.GaussianBlur(test, (3, 3), 3.80)
             op_3 = cv2.GaussianBlur(test, (3, 3), 4.786)
